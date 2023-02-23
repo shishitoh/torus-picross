@@ -1,3 +1,4 @@
+use rand::Rng;
 use std::convert;
 use std::ops;
 
@@ -163,6 +164,8 @@ impl Problem {
 impl Problem {
     fn set_hint(&mut self) {
         self.row_hints = vec![vec![]; self.board_size.row];
+        let mut rng = rand::thread_rng();
+
         for row in 0..self.board_size.row as isize {
             let hint = &mut self.row_hints[row as usize];
             let mut len = 0;
@@ -184,6 +187,8 @@ impl Problem {
             } else if len != 0 {
                 hint.push(len);
             }
+            let rotate = rng.gen_range(0..hint.len());
+            hint.rotate_left(rotate);
         }
 
         self.column_hints = vec![vec![]; self.board_size.column];
@@ -208,6 +213,8 @@ impl Problem {
             } else if len != 0 {
                 hint.push(len);
             }
+            let rotate = rng.gen_range(0..hint.len());
+            hint.rotate_left(rotate);
         }
     }
 }
