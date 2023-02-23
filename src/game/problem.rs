@@ -190,11 +190,8 @@ impl Problem {
         for column in 0..self.board_size.column as isize {
             let hint = &mut self.column_hints[column as usize];
             let mut len = 0;
-            let begin_yes = self.answer_board[Point {
-                row: self.board_size.row as isize - 1,
-                column,
-            }] == Mark::Yes;
-            for row in (0..self.board_size.row as isize).rev() {
+            let begin_yes = self.answer_board[Point { row: 0, column }] == Mark::Yes;
+            for row in 0..self.board_size.row as isize {
                 if self.answer_board[Point { row, column }] == Mark::Yes {
                     len += 1;
                 } else {

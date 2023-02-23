@@ -10,10 +10,10 @@ use crossterm::{
     },
 };
 use std::{
-    error::Error,
-    io::{self, BufReader, prelude::*},
     env,
-    fs::File
+    error::Error,
+    fs::File,
+    io::{self, prelude::*, BufReader},
 };
 use tui::{
     backend::{Backend, CrosstermBackend},
@@ -134,7 +134,13 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
         .split(f.size());
     let tmp_chunks = Layout::default()
         .direction(Direction::Vertical)
-        .constraints([Constraint::Length(column_hints_height), Constraint::Length(size.row as u16)].as_ref())
+        .constraints(
+            [
+                Constraint::Length(column_hints_height),
+                Constraint::Length(size.row as u16),
+            ]
+            .as_ref(),
+        )
         .split(chunks[0]);
     let row_hint_chunks = tmp_chunks[1];
 
@@ -169,21 +175,17 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
     let column_hint_chunk = tmp_chunks[0];
     let board_chunk = tmp_chunks[1];
     let column_hints_span: Vec<Spans> = (0..column_hints_height)
-        .rev()
         .map(|i| i as usize)
         .map(|i| {
             Spans::from(Span::raw(
                 (0..size.column)
+                    .cycle()
+                    .skip(app.controller.point().column as usize + size.column - size.column / 2)
+                    .take(size.column)
                     .map(|j| {
-                        (j as isize + app.controller.point().column as isize
-                            - size.column as isize / 2)
-                            % size.column as isize
-                    })
-                    .map(|j| if j < 0 { j + size.column as isize } else { j })
-                    .map(|j| j as usize)
-                    .map(|j| {
-                        if let Some(n) = app.controller.get_column_hints()[j].get(i) {
-                            format!("{:>2}", n)
+                        let v = &app.controller.get_column_hints()[j];
+                        if i + 1 <= v.len() {
+                            format!("{:>2}", v[v.len() - i - 1])
                         } else {
                             "  ".to_string()
                         }
@@ -192,6 +194,7 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
                     .join(""),
             ))
         })
+        .rev()
         .collect();
     let column_hints_paragraph = Paragraph::new(column_hints_span);
     f.render_widget(column_hints_paragraph, column_hint_chunk);
