@@ -1,51 +1,50 @@
 use std::convert;
 use std::ops;
 
-impl<T> ops::Index<Point> for Vec<Vec<T>> {
-    type Output = T;
-    fn index(&self, point: Point) -> &Self::Output {
-        &self[point.row][point.column]
-    }
-}
-
-impl<T> ops::IndexMut<Point> for Vec<Vec<T>> {
-    fn index_mut(&mut self, point: Point) -> &mut Self::Output {
-        &mut self[point.row][point.column]
-    }
-}
-
-// TODO: 後でenumの名前を変える
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub enum State {
+pub enum Mark {
     Yes,
     No,
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub enum PointState {
+pub enum State {
     NotMarked,
-    Marked(State),
+    Marked(Mark),
 }
 
-impl convert::From<PointState> for State {
-    fn from(value: PointState) -> Self {
+impl convert::From<State> for Mark {
+    fn from(value: State) -> Self {
         match value {
-            PointState::Marked(State::Yes) => State::Yes,
-            _ => State::No,
+            State::Marked(Mark::Yes) => Mark::Yes,
+            _ => Mark::No,
         }
     }
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct Size {
-    row: usize,
-    column: usize,
+    pub row: usize,
+    pub column: usize,
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct Point {
-    row: usize,
-    column: usize,
+    pub row: isize,
+    pub column: isize,
+}
+
+impl<T> ops::Index<Point> for Vec<Vec<T>> {
+    type Output = T;
+    fn index(&self, point: Point) -> &Self::Output {
+        &self[point.row as usize][point.column as usize]
+    }
+}
+
+impl<T> ops::IndexMut<Point> for Vec<Vec<T>> {
+    fn index_mut(&mut self, point: Point) -> &mut Self::Output {
+        &mut self[point.row as usize][point.column as usize]
+    }
 }
 
 impl ops::Add<Self> for Point {
@@ -83,16 +82,16 @@ impl ops::SubAssign for Point {
 }
 
 pub struct Problem {
-    answer_board: Vec<Vec<State>>,
+    answer_board: Vec<Vec<Mark>>,
     row_hints: Vec<Vec<usize>>,
     column_hints: Vec<Vec<usize>>,
-    working_board: Vec<Vec<PointState>>,
+    working_board: Vec<Vec<State>>,
     board_size: Size,
 }
 
 // publib fn
 impl Problem {
-    pub fn from(answer_board: Vec<Vec<State>>) -> Self {
+    pub fn from(answer_board: Vec<Vec<Mark>>) -> Self {
         let row = answer_board.len();
         let column = answer_board[0].len();
 
@@ -104,7 +103,7 @@ impl Problem {
         }
 
         let board_size = Size { row, column };
-        let working_board = vec![vec![PointState::NotMarked; column]; row];
+        let working_board = vec![vec![State::NotMarked; column]; row];
         let mut problem = Self {
             answer_board,
             row_hints: Vec::new(),
@@ -121,22 +120,30 @@ impl Problem {
         self.board_size
     }
 
-    pub fn get_answer_board(&self, point: Point) -> State {
+    pub fn get_answer_board(&self, point: Point) -> Mark {
         self.answer_board[point]
     }
 
-    pub fn get_working_board(&self, point: Point) -> PointState {
+    pub fn get_working_board(&self, point: Point) -> State {
         self.working_board[point]
     }
 
-    pub fn set_working_board(&mut self, point: Point, p_state: PointState) {
+    pub fn set_working_board(&mut self, point: Point, p_state: State) {
         self.working_board[point] = p_state;
+    }
+
+    pub fn get_row_hints(&self) -> &Vec<Vec<usize>> {
+        &self.row_hints
+    }
+
+    pub fn get_column_hints(&self) -> &Vec<Vec<usize>> {
+        &self.column_hints
     }
 
     pub fn wrong_points(&self) -> Vec<Point> {
         let mut point_vec = Vec::new();
-        for row in 0..self.board_size().row {
-            for column in 0..self.board_size().column {
+        for row in 0..self.board_size().row as isize {
+            for column in 0..self.board_size().column as isize {
                 let point = Point { row, column };
                 if self.answer_board[point] != self.working_board[point].into() {
                     point_vec.push(point);
@@ -156,11 +163,12 @@ impl Problem {
 impl Problem {
     fn set_hint(&mut self) {
         self.row_hints = vec![vec![]; self.board_size.row];
-        for row in 0..self.board_size.row {
-            let hint = &mut self.row_hints[row];
+        for row in 0..self.board_size.row as isize {
+            let hint = &mut self.row_hints[row as usize];
             let mut len = 0;
-            for column in 0..self.board_size.column {
-                if self.answer_board[Point { row, column }] == State::Yes {
+            let begin_yes = self.answer_board[Point { row, column: 0 }] == Mark::Yes;
+            for column in 0..self.board_size.column as isize {
+                if self.answer_board[Point { row, column }] == Mark::Yes {
                     len += 1;
                 } else {
                     if len != 0 {
@@ -170,17 +178,24 @@ impl Problem {
                 }
             }
             if hint.is_empty() {
-                hint.push(0);
+                hint.push(len);
+            } else if begin_yes {
+                hint[0] += len;
+            } else if len != 0 {
+                hint.push(len);
             }
-            hint[0] += len;
         }
 
         self.column_hints = vec![vec![]; self.board_size.column];
-        for column in 0..self.board_size.column {
-            let hint = &mut self.column_hints[column];
+        for column in 0..self.board_size.column as isize {
+            let hint = &mut self.column_hints[column as usize];
             let mut len = 0;
-            for row in 0..self.board_size.row {
-                if self.answer_board[Point { row, column }] == State::Yes {
+            let begin_yes = self.answer_board[Point {
+                row: self.board_size.row as isize - 1,
+                column,
+            }] == Mark::Yes;
+            for row in (0..self.board_size.row as isize).rev() {
+                if self.answer_board[Point { row, column }] == Mark::Yes {
                     len += 1;
                 } else {
                     if len != 0 {
@@ -190,9 +205,12 @@ impl Problem {
                 }
             }
             if hint.is_empty() {
-                hint.push(0);
+                hint.push(len);
+            } else if begin_yes {
+                hint[0] += len;
+            } else if len != 0 {
+                hint.push(len);
             }
-            hint[0] += len;
         }
     }
 }
