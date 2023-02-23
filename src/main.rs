@@ -122,6 +122,21 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
     let column_hints_height = column_hints_height(app);
     let size = app.controller.board_size();
     let chunks = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints(
+            [
+                Constraint::Length(1),
+                Constraint::Min(0),
+            ]
+            .as_ref(),
+        )
+        .split(f.size());
+    if app.controller.is_correct_answer() {
+        let clear_text = Span::styled("congratulations!", Style::default().add_modifier(Modifier::RAPID_BLINK));
+        let clear_paragraph = Paragraph::new(clear_text);
+        f.render_widget(clear_paragraph, chunks[0]);
+    }
+    let game_chunks = Layout::default()
         .direction(Direction::Horizontal)
         .constraints(
             [
@@ -131,7 +146,7 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
             ]
             .as_ref(),
         )
-        .split(f.size());
+        .split(chunks[1]);
     let tmp_chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints(
@@ -141,7 +156,7 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
             ]
             .as_ref(),
         )
-        .split(chunks[0]);
+        .split(game_chunks[0]);
     let row_hint_chunks = tmp_chunks[1];
 
     let row_hints_span: Vec<Spans> = (0..size.row)
@@ -169,7 +184,7 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
             ]
             .as_ref(),
         )
-        .split(chunks[1]);
+        .split(game_chunks[1]);
     let column_hint_chunk = tmp_chunks[0];
     let board_chunk = tmp_chunks[1];
     let column_hints_span: Vec<Spans> = (0..column_hints_height)
