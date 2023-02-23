@@ -96,7 +96,7 @@ impl ProblemController {
     }
 
     pub fn point(&self) -> Point {
-        self.point
+        self.point.normalize(self.problem.board_size())
     }
 
     pub fn wrong_points(&self) -> Vec<Point> {

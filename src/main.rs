@@ -145,11 +145,9 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
     let row_hint_chunks = tmp_chunks[1];
 
     let row_hints_span: Vec<Spans> = (0..size.row)
-        .map(|i| {
-            (i as isize + app.controller.point().row - size.row as isize / 2) % size.row as isize
-        })
-        .map(|i| if i < 0 { i + size.row as isize } else { i })
-        .map(|i| i as usize)
+        .cycle()
+        .skip(app.controller.point().row as usize + size.row - size.row / 2)
+        .take(size.row)
         .map(|i| {
             Spans::from(Span::raw(
                 app.controller.get_row_hints()[i]
@@ -199,20 +197,15 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
     let column_hints_paragraph = Paragraph::new(column_hints_span);
     f.render_widget(column_hints_paragraph, column_hint_chunk);
     let board_span: Vec<Spans> = (0..size.row)
-        .map(|i| {
-            (i as isize + app.controller.point().row - size.row as isize / 2) % size.row as isize
-        })
-        .map(|i| if i < 0 { i + size.row as isize } else { i })
-        .map(|i| i as usize)
+        .cycle()
+        .skip(app.controller.point().row as usize + size.row - size.row / 2)
+        .take(size.row)
         .map(|i| {
             Spans::from(
                 (0..size.column)
-                    .map(|j| {
-                        (j as isize + app.controller.point().column - size.column as isize / 2)
-                            % size.column as isize
-                    })
-                    .map(|j| if j < 0 { j + size.column as isize } else { j })
-                    .map(|j| j as usize)
+                    .cycle()
+                    .skip(app.controller.point().column as usize + size.column - size.column / 2)
+                    .take(size.column)
                     .map(|j| {
                         let str = match app.controller.get_working_board(Point {
                             row: i as isize,
