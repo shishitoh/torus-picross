@@ -123,16 +123,13 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
     let size = app.controller.board_size();
     let chunks = Layout::default()
         .direction(Direction::Vertical)
-        .constraints(
-            [
-                Constraint::Length(1),
-                Constraint::Min(0),
-            ]
-            .as_ref(),
-        )
+        .constraints([Constraint::Length(1), Constraint::Min(0)].as_ref())
         .split(f.size());
     if app.controller.is_correct_answer() {
-        let clear_text = Span::styled("congratulations!", Style::default().add_modifier(Modifier::RAPID_BLINK));
+        let clear_text = Span::styled(
+            "congratulations!",
+            Style::default().add_modifier(Modifier::RAPID_BLINK),
+        );
         let clear_paragraph = Paragraph::new(clear_text);
         f.render_widget(clear_paragraph, chunks[0]);
     }
@@ -159,20 +156,23 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
         .split(game_chunks[0]);
     let row_hint_chunks = tmp_chunks[1];
 
-    let row_hints_span: Vec<Spans> = (0..size.row)
-        .cycle()
-        .skip(app.controller.point().row as usize + size.row - size.row / 2)
-        .take(size.row)
-        .map(|i| {
-            Spans::from(Span::raw(
-                app.controller.get_row_hints()[i]
-                    .iter()
-                    .map(|x| x.to_string())
-                    .collect::<Vec<String>>()
-                    .join(" "),
-            ))
-        })
-        .collect();
+    let row_hints_span: Vec<Spans> = {
+        let mut rrange = (0..size.row).collect::<Vec<usize>>();
+        rrange.rotate_left(app.controller.point().row as usize);
+        rrange.rotate_right(size.row / 2);
+        rrange
+            .into_iter()
+            .map(|i| {
+                Spans::from(Span::raw(
+                    app.controller.get_row_hints()[i]
+                        .iter()
+                        .map(|x| x.to_string())
+                        .collect::<Vec<String>>()
+                        .join(" "),
+                ))
+            })
+            .collect()
+    };
     let row_hints_paragraph = Paragraph::new(row_hints_span).alignment(Alignment::Right);
     f.render_widget(row_hints_paragraph, row_hint_chunks);
     let tmp_chunks = Layout::default()
@@ -190,64 +190,68 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
     let column_hints_span: Vec<Spans> = (0..column_hints_height)
         .map(|i| i as usize)
         .map(|i| {
-            Spans::from(Span::raw(
-                (0..size.column)
-                    .cycle()
-                    .skip(app.controller.point().column as usize + size.column - size.column / 2)
-                    .take(size.column)
+            Spans::from(Span::raw({
+                let mut rrange: Vec<usize> = (0..size.column).collect();
+                rrange.rotate_left(app.controller.point().column as usize);
+                rrange.rotate_right(size.column / 2);
+                rrange
+                    .into_iter()
                     .map(|j| {
                         let v = &app.controller.get_column_hints()[j];
-                        if i + 1 <= v.len() {
-                            format!("{:>2}", v[v.len() - i - 1])
+                        if column_hints_height as usize <= v.len() + i {
+                            format!("{:>2}", v[v.len() + i - column_hints_height as usize])
                         } else {
                             "  ".to_string()
                         }
                     })
                     .collect::<Vec<String>>()
-                    .join(""),
-            ))
+                    .join("")
+            }))
         })
-        .rev()
         .collect();
     let column_hints_paragraph = Paragraph::new(column_hints_span);
     f.render_widget(column_hints_paragraph, column_hint_chunk);
-    let board_span: Vec<Spans> = (0..size.row)
-        .cycle()
-        .skip(app.controller.point().row as usize + size.row - size.row / 2)
-        .take(size.row)
-        .map(|i| {
-            Spans::from(
-                (0..size.column)
-                    .cycle()
-                    .skip(app.controller.point().column as usize + size.column - size.column / 2)
-                    .take(size.column)
-                    .map(|j| {
-                        let str = match app.controller.get_working_board(Point {
-                            row: i as isize,
-                            column: j as isize,
-                        }) {
-                            State::NotMarked => " .",
-                            State::Marked(Mark::Yes) => "[]",
-                            State::Marked(Mark::No) => " !",
-                        };
-                        let style: Style = if app
-                            .controller
-                            .point()
-                            .normalize(app.controller.board_size())
-                            == (Point {
+    let board_span: Vec<Spans> = {
+        let mut rrange: Vec<usize> = (0..size.row).collect();
+        rrange.rotate_left(app.controller.point().row as usize);
+        rrange.rotate_right(size.row / 2);
+        rrange
+            .into_iter()
+            .map(|i| {
+                Spans::from({
+                    let mut rrange: Vec<usize> = (0..size.column).collect();
+                    rrange.rotate_left(app.controller.point().column as usize);
+                    rrange.rotate_right(size.column / 2);
+                    rrange
+                        .into_iter()
+                        .map(|j| {
+                            let str = match app.controller.get_working_board(Point {
                                 row: i as isize,
                                 column: j as isize,
                             }) {
-                            Style::default().add_modifier(Modifier::REVERSED)
-                        } else {
-                            Style::default()
-                        };
-                        Span::styled(str, style)
-                    })
-                    .collect::<Vec<Span>>(),
-            )
-        })
-        .collect();
+                                State::NotMarked => " .",
+                                State::Marked(Mark::Yes) => "[]",
+                                State::Marked(Mark::No) => " !",
+                            };
+                            let style: Style = if app
+                                .controller
+                                .point()
+                                .normalize(app.controller.board_size())
+                                == (Point {
+                                    row: i as isize,
+                                    column: j as isize,
+                                }) {
+                                Style::default().add_modifier(Modifier::REVERSED)
+                            } else {
+                                Style::default()
+                            };
+                            Span::styled(str, style)
+                        })
+                        .collect::<Vec<Span>>()
+                })
+            })
+            .collect()
+    };
     let board_paragraph = Paragraph::new(board_span);
     f.render_widget(board_paragraph, board_chunk);
 }

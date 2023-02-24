@@ -163,8 +163,8 @@ impl Problem {
 // private fn
 impl Problem {
     fn set_hint(&mut self) {
-        self.row_hints = vec![vec![]; self.board_size.row];
         let mut rng = rand::thread_rng();
+        self.row_hints = vec![vec![]; self.board_size.row];
 
         for row in 0..self.board_size.row as isize {
             let hint = &mut self.row_hints[row as usize];
