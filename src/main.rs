@@ -60,7 +60,8 @@ fn main() -> Result<(), Box<dyn Error>> {
             for (c, str) in &mut row.iter_mut().zip(v) {
                 *c = match str {
                     "0" => Mark::No,
-                    _ => Mark::Yes,
+                    "1" => Mark::Yes,
+                    _ => return format_err,
                 };
             }
         } else {
