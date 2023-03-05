@@ -14,6 +14,12 @@ pub enum State {
     Marked(Mark),
 }
 
+impl convert::From<Mark> for State {
+    fn from(value: Mark) -> Self {
+        State::Marked(value)
+    }
+}
+
 impl convert::From<State> for Mark {
     fn from(value: State) -> Self {
         match value {
@@ -90,9 +96,8 @@ pub struct Problem {
     board_size: Size,
 }
 
-// publib fn
-impl Problem {
-    pub fn from(answer_board: Vec<Vec<Mark>>) -> Self {
+impl convert::From<Vec<Vec<Mark>>> for Problem {
+    fn from(answer_board: Vec<Vec<Mark>>) -> Self {
         let row = answer_board.len();
         let column = answer_board[0].len();
 
@@ -116,7 +121,10 @@ impl Problem {
         problem.set_hint();
         problem
     }
+}
 
+// publib fn
+impl Problem {
     pub fn board_size(&self) -> Size {
         self.board_size
     }

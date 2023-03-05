@@ -24,10 +24,10 @@ pub enum Direction {
     W,
 }
 
-impl convert::Into<Point> for Direction {
-    fn into(self) -> Point {
+impl convert::From<Direction> for Point {
+    fn from(dir: Direction) -> Self {
         use Direction::*;
-        match self {
+        match dir {
             N => Point { row: -1, column: 0 },
             E => Point { row: 0, column: 1 },
             S => Point { row: 1, column: 0 },
@@ -41,9 +41,8 @@ pub struct ProblemController {
     point: Point,
 }
 
-// public fn
-impl ProblemController {
-    pub fn from(problem: Problem) -> Self {
+impl convert::From<Problem> for ProblemController {
+    fn from(problem: Problem) -> Self {
         let size = problem.board_size();
         let mut rng = rand::thread_rng();
         let row = rng.gen_range(0..size.row);
@@ -54,7 +53,10 @@ impl ProblemController {
         };
         Self { problem, point }
     }
+}
 
+// public fn
+impl ProblemController {
     pub fn key_move_up(&mut self) {
         self.key_move(Direction::N)
     }
