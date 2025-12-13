@@ -45,11 +45,9 @@ impl convert::From<Problem> for ProblemController {
     fn from(problem: Problem) -> Self {
         let size = problem.board_size();
         let mut rng = rand::thread_rng();
-        let row = rng.gen_range(0..size.row);
-        let column = rng.gen_range(0..size.column);
         let point = Point {
-            row: row as isize,
-            column: column as isize,
+            row: rng.gen_range(0..size.row) as isize,
+            column: rng.gen_range(0..size.column) as isize,
         };
         Self { problem, point }
     }
